@@ -16,6 +16,7 @@ config = {
 }
 
 if __name__ == '__main__':
+
     f = open('dictionary.txt', mode='w', encoding='utf-8')
     db = pymysql.connect(**config)
     cur = db.cursor()
@@ -30,7 +31,7 @@ if __name__ == '__main__':
     cur.execute("select DISTINCT majors.m_name from majors")
     for i in cur.fetchall():
         f.write(str(i[0]))  # 专业名
-        f.write("专业 2000 nz\n")
+        f.write("专业 20000 nz\n")
     cur.execute("select DISTINCT majors.batch from majors")
     for i in cur.fetchall():
         f.write(str(i[0]))  # 批次名
