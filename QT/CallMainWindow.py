@@ -20,7 +20,6 @@ config = {
     "password": "aliyun"
 }
 
-
 class MyMainWindow(QMainWindow, Ui_MainWindow):
 
     """
@@ -31,12 +30,6 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.db: 连接数据库
         self.cur：与数据库建立的连接关系
         self.model:表格模型，与UI界面的表格绑定，用于显示信息
-        self.sqlkeys:字典类型，sql中提取的关键词列表。
-                     关键词有学校school、科目类别subject、批次level、
-                     年份year、数字关键词val、专业major、学校层次schoollevel
-        self.wkeys:字典类型，自然语言中提取的关键词列表。
-                   关键词有学校school、科目类别subject、批次level、
-                   年份year、数字关键词val、专业major、学校层次schoollevel
     """
     def __init__(self, parent=None):
         super(MyMainWindow, self).__init__(parent)
@@ -52,26 +45,7 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         jieba.load_userdict("dictionary.txt")
         # 为表格显示做准备
         self.model = QStandardItemModel()
-        # sql提取出来的关键词分类列表
-        self.sqlkeys = dict()
-        self.sqlkeys["school"] = []
-        self.sqlkeys["subject"] = []
-        self.sqlkeys["subject"] = []
-        self.sqlkeys["major"] = []
-        self.sqlkeys["level"] = []
-        self.sqlkeys["year"] = []
-        self.sqlkeys["val"] = []
-        self.sqlkeys["schoollevel"] = []
-        # 自然语言提取出来的关键词分类列表
-        self.wkeys = dict()
-        self.wkeys["school"] = []
-        self.wkeys["subject"] = []
-        self.wkeys["subject"] = []
-        self.wkeys["major"] = []
-        self.wkeys["level"] = []
-        self.wkeys["year"] = []
-        self.wkeys["val"] = []
-        self.wkeys["schoollevel"] = []
+
     '''
     添加查询报错相应机制(详细报错)
     TODOOOOOOOOOOOOO设置窗口关闭时断开数据库连接
@@ -119,138 +93,11 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.sqlquery = self.InSql_Text.toPlainText()  # 获取sql语句
 
     '''
-    提取输入的自然语言的关键词
+    使用jieba分词对自然语言进行分词
     '''
     def solvewkeys(self):
-        wkey = jieba.lcut(self.wquery)  #  对输入的自然语言进行分词
-        print(wkey)
-        # 分词后再次进行数据筛选，分类的分类，冗余的过滤
-        for i in wkey:
-            if ("大学" in i) or ("学院" in i):
-                self.wkeys["school"].append(i)
-                continue
-            elif '批' in i:
-                self.wkeys["level"].append(i)
-                continue
-            elif ("文科" in i) or ("理科" in i) or ("综合" in i):
-                self.wkeys["subject"].append(i)
-                continue
-            elif "年" in i:
-                self.wkeys["year"].append(i)
-                continue
-            elif ("985" in i) or ("211" in i) or ("双一流" in i):
-                self.wkeys["schoollevel"].append(i)
-                continue
-            elif "专业" in i:
-                self.wkeys["major"].append(i)
-                continue
-            elif i.isdigit():
-                self.wkeys["val"].append(i)  # 内容全是数字，是数字关键词（如分数）
-                continue
-            else:
-                continue
-        # 用来测试有没有成功关键词分类
-        # print("--------------")
-        # print(self.wkeys["school"])
-        # print("--------------")
-        # print(self.wkeys["level"])
-        # print("--------------")
-        # print(self.wkeys["subject"])
-        # print("--------------")
-        # print(self.wkeys["year"])
-        # print("--------------")
-        # print(self.wkeys["val"])
-        # print("--------------")
-        # print(self.wkeys["major"])
-        # print("--------------")
-        # print(self.wkeys["schoollevel"])
-
-    '''
-    获取输入的自然语言和SQL语句
-    Returns:
-        sqlkey:根据空格切割的字符串列表
-    Attributes:
-        self.wquery:输入的自然语言
-        self.sqlquery:输入的SQL语句
-    Tips:
-        关键词可以分为下面几种：
-        本身就在SQL语句‘’内的，作为值。
-        年份关键词，结构是表名（英文+下划线）+四位数字
-        纯数字关键词，如分数625，如
-        学校属性关键词，一共三种情况：is_985,is_211,_is_yiliu
-    '''
-    def findsqlkey(self):
-        # 匹配查找‘关键词’
-        pattern = re.compile(r"'(.*?)'")
-        sqlkey = pattern.findall(self.sqlquery)
-        # 匹配查找"关键词"
-        pattern = re.compile(r"\"(.*?)\"")
-        temp1 = pattern.findall(self.sqlquery)
-        sqlkey = sqlkey + temp1
-        # 匹配查找 年份表  X_2016(结构是 英文字表名+可能有的下划线+四位数字(2016~2018))
-        pattern = re.compile(r"\s(\w+\d\d\d\d)")
-        temp1 = pattern.findall(self.sqlquery)
-        sqlkey = sqlkey + temp1
-        # 匹配查找 年份表/学校属性
-        pattern = re.compile("is_\w\w\w")
-        temp1 = pattern.findall(self.sqlquery)
-        sqlkey = sqlkey + temp1
-        # 匹配查找 纯数字关键词
-        pattern = re.compile(r"\s(\d+)\s")
-        temp1 = pattern.findall(self.sqlquery)
-        sqlkey = sqlkey + temp1
-
-        # print(sqlkey)
-        return sqlkey
-
-    '''
-    把输入的SQL命令中提取出来的关键词进行分类
-    Attributes:
-        self.wquery:输入的自然语言
-        self.sqlquery:输入的SQL语句
-    '''
-    def solvesqlkey(self):
-        sqlkeys = self.findsqlkey()  # 从输入的SQL提取的关键词列表
-        for i in sqlkeys:
-            if ("大学" in i) or ("学院" in i):
-                self.sqlkeys["school"].append(i)
-                continue
-            elif '批' in i:
-                self.sqlkeys["level"].append(i)
-                continue
-            elif ("文科" in i) or ("理科" in i) or ("综合" in i):
-                self.sqlkeys["subject"].append(i)
-                continue
-            elif ('2016' in i) or ('2017' in i) or ('2018' in i):
-                self.sqlkeys["year"].append(i)
-                continue
-            elif ('is_985' in i) or ('is_211' in i) or ("is_yiliu" in i):
-                self.sqlkeys["schoollevel"].append(i)
-                continue
-            else:
-                # pattern = re.compile('[0-9]+')
-                # match = pattern.findall(i)
-                if str(i).isdigit():
-                    self.sqlkeys["val"].append(i)    # 内容全是数字，是数字关键词（如分数）
-                else:
-                    self.sqlkeys["major"].append(i)  # 字符串包含非数字的字符，是专业
-                continue
-
-        # 用来测试有没有成功关键词分类
-        # print("--------------")
-        # print(self.sqlkeys["school"])
-        # print("--------------")
-        # print(self.sqlkeys["level"])
-        # print("--------------")
-        # print(self.sqlkeys["subject"])
-        # print("--------------")
-        # print(self.sqlkeys["year"])
-        # print("--------------")
-        # print(self.sqlkeys["val"])
-        # print("--------------")
-        # print(self.sqlkeys["major"])
-        # print("--------------")
-        # print(self.sqlkeys["schoollevel"])
+        self.wkey = jieba.lcut(self.wquery)  #  对输入的自然语言进行分词
+        # print(self.wkey)
 
     '''
     输入参数清空/重置
@@ -259,23 +106,6 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.wquery = ""     # 清空输入的自然语言
         self.Sqlquer = ""    # 清空输入的SQL语句
         self.model.clear()   # 清空上一次查询的结果
-
-        self.sqlkeys["school"].clear()    # 清空sql学校关键词列表
-        self.sqlkeys["val"].clear()       # 清空sql数字关键词列表
-        self.sqlkeys["year"].clear()      # 清空sql年份表关键词列表
-        self.sqlkeys["level"].clear()     # 清空sql批次关键词列表
-        self.sqlkeys["subject"].clear()   # 清空sql科目关键词列表
-        self.sqlkeys["major"].clear()     # 清空sql专业关键词列表
-        self.sqlkeys["schoollevel"].clear()  # 清空sql学校层次关键词列表
-
-        self.wkeys["school"].clear()         # 清空自然语言关键词表
-        self.wkeys["subject"].clear()
-        self.wkeys["subject"].clear()
-        self.wkeys["major"].clear()
-        self.wkeys["level"].clear()
-        self.wkeys["year"].clear()
-        self.wkeys["val"].clear()
-        self.wkeys["schoollevel"].clear()
 
     '''
     根据输入的SQL语言对比数据库查询函数
@@ -305,18 +135,48 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
             print(QMessageBox.information(self, "提醒", "查询无记录", QMessageBox.Yes, QMessageBox.Yes))
             return
         self.model.setHorizontalHeaderLabels(colname)       # 设置列名
+        f = open('document.txt', mode='w', encoding='utf-8')
+
         for i in range(self.rowsum):
             for j in range(self.colsum):
                 tempdata = data[i][j]
                 finaldata = QStandardItem(str(tempdata))
-                self.model.setItem(i, j, finaldata)
-        self.SearchRes_Tab.setModel(self.model)             # 结果插入表
+                if i < 1000:
+                    self.model.setItem(i, j, finaldata)
+                f.write(str(tempdata)+" ")
+            if i < 1000:
+                self.SearchRes_Tab.setModel(self.model)   # 结果插入表
+            f.write("\n")
+    '''
+    对test测试的内容进行错误检验
+    '''
+    def test1check(self,a):
+        for i in range(len(a)):
+            flag=0
+            for j in range(len(self.wkey)):
+                if(a[i] in self.wquery):
+                    flag = 1
+                    break
+                if (self.wkey[j]==a[i]):
+                    flag=1
+                    break
+            if(flag==0):
+                print(QMessageBox.information(self, "提醒", "自然语言中没有'"+a[i]+"'关键词", QMessageBox.Yes, QMessageBox.Yes))
+                return 0
+        return 1
 
-    def test1(self,natureLanguage, sqlLanguage):
+    def test1(self, natureLanguage, sqlLanguage):
         # 按照空格将sqlLanguage中的单词分隔开
         sqlkey = sqlLanguage.split(" ")
 
         # 构造两个列表,顺序相同,用于记录那个
+        '''
+        a存储where中的列名
+        b存储where中列名的关键字
+        c中存储的为连接条件中前面的列名
+        d中存储的为连接条件后免得列名或关键字
+        a,b一一对应  c,d一一对应
+        '''
         a = []
         b = []
         c = []
@@ -329,6 +189,10 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
                 if sqlkey[index - 1] == '=':
                     c.append(sqlkey[index - 2])
                     d.append(sqlkey[index])
+        # 进行错误检验 对sql语句合自然语言
+        if self.test1check(b)==0:
+            return
+        self.search_sql()  # 执行查询并显示到表格
         # 输出特定列,按照a中的顺序进行添加
         sql = "select distinct "
         for index in range(len(a) - 1):
@@ -339,35 +203,249 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
             sql = sql + "* "
 
         sql = sql + re.compile(r"from (.*?) where").findall(sqlLanguage)[0]
-        if (len(c) > 0):
+        if len(c) > 0:
             sql = sql + " where "
         print(sql)
         for index in range(len(c) - 1):
             sql = sql + c[index] + " = " + d[index] + " and "
-        print(sql)
-        if (len(c) > 0):
+        # print(sql)
+        if len(c) > 0:
             sql = sql + c[len(c) - 1] + " = " + d[len(c) - 1]
-        print(sql)
+        # print(sql)
         db = pymysql.connect(**config)
         cur = db.cursor()
         cur.execute(sql)
-        k=0
+        k = 0
         self.model1 = QStandardItemModel()
-
         self.model2 = QStandardItemModel()
+        f = open('sqlnat.txt', mode='w', encoding='utf-8')
+        d=0
         for i in cur.fetchall():  # i为一个列表
             a1 = natureLanguage
             b1 = sqlLanguage
             for j in range(len(i)):
                 a1 = a1.replace(b[j], i[j])
                 b1 = b1.replace(b[j], i[j])
-            self.model1.setItem(k,0,QStandardItem(str(a1)))
-            self.model2.setItem(k, 0, QStandardItem(str(b1)))
+            if d<1000:
+                self.model1.setItem(k, 0, QStandardItem(str(a1)))
+                self.model2.setItem(k, 0, QStandardItem(str(b1)))
+            f.write(str(a1)+"\n")
+            f.write(str(b1) + "\n")
             # print(a1)
             # print(b1)
-            k=k+1
-        self.SonQ_Tab.setModel(self.model1)
-        self.SonSQL_Tab.setModel(self.model2)
+            k = k+1
+            if d<1000:
+                self.SonQ_Tab.setModel(self.model1)
+                self.SonSQL_Tab.setModel(self.model2)
+            d=d+1
+
+    def test2(self, natureLanguage, sqlLanguage):
+        self.search_sql()  # 执行查询并显示到表格
+        # 按照空格将sqlLanguage中的单词分隔开
+        sqlkey = sqlLanguage.split(" ")
+        # 创建一个字典 存放表中列名(中文)和列名(英文)其中key;表名+1(自然语言中的列名),表名+2(sql语言中的列名)
+        # sqlTab字典用于存放不同表中的列
+        sqlTab = dict()
+        sqlTab["province"] = ["province.p_id", "province.p_name"]
+        sqlTab["schools"] = ["schools.s_id", "schools.s_name"]
+        sqlTab["majors"] = ["majors.m_id", "majors.m_name", "majors.batch"]
+        sqlTab["province_line"] = ["province_line.p_id", "province_line.year", "province_line.type",
+                                   "province_line.batch", "province_line.line"]
+        sqlTab["school_line2016"] = ["school_line2016.s_id", "school_line2016.p_id", "school_line2016.type",
+                                   "school_line2016.batch", "school_line2016.average", "school_line2016.lowest",
+                                   "school_line2016.province_line"]
+        sqlTab["school_line2017"] = ["school_line2017.s_id", "school_line2017.p_id", "school_line2017.type",
+                                     "school_line2017.batch", "school_line2017.average", "school_line2017.lowest",
+                                     "school_line2017.province_line"]
+        sqlTab["school_line2018"] = ["school_line2018.s_id", "school_line2018.p_id", "school_line2018.type",
+                                     "school_line2018.batch", "school_line2018.average", "school_line2018.lowest",
+                                     "school_line2018.province_line"]
+        sqlTab["major_line2016"] = ["major_line2016.s_id", "major_line2016.m_id", "major_line2016.p_id",
+                                    "major_line2016.type", "major_line2016.batch", "major_line2016.average",
+                                    "major_line2016.lowest"]
+        sqlTab["major_line2017"] = ["major_line2017.s_id", "major_line2017.m_id", "major_line2017.p_id",
+                                    "major_line2017.type", "major_line2017.batch", "major_line2017.average",
+                                    "major_line2017.lowest"]
+        sqlTab["major_line2018"] = ["major_line2018.s_id", "major_line2018.m_id", "major_line2018.p_id",
+                                    "major_line2018.type", "major_line2018.batch", "major_line2017.average",
+                                    "major_line2018.lowest"]
+        sqlLan = dict()
+        sqlLan["province.p_id"] = ["省号"]
+        sqlLan["province.p_name"] = ["省名"]
+        sqlLan["schools.s_id"] = ["学校号"]
+        sqlLan["schools.s_name"] = ["学校名"]
+        sqlLan["majors.m_id"] = ["专业号"]
+        sqlLan["majors.m_name"] = ["专业名"]
+        sqlLan["majors.batch"] = ["专业批次"]
+        sqlLan["province_line.p_id"] = ["省号"]
+        sqlLan["province_line.year"] = ["年份"]
+        sqlLan["province_line.type"] = ["类别"]
+        sqlLan["province_line.batch"] = ["批次"]
+        sqlLan["province_line.line"] = ["省分数线"]
+        sqlLan["school_line2016.s_id"] = ["学校号"]
+        sqlLan["school_line2016.p_id"] = ["省号"]
+        sqlLan["school_line2016.type"] = ["类别"]
+        sqlLan["school_line2016.batch"] = ["批次"]
+        sqlLan["school_line2016.average"] = ["平均分"]
+        sqlLan["school_line2016.lowest"] = ["最低分"]
+        sqlLan["school_line2016.province_line"] = ["省分数线"]
+        sqlLan["school_line2017.s_id"] = ["学校号"]
+        sqlLan["school_line2017.p_id"] = ["省号"]
+        sqlLan["school_line2017.type"] = [";类别"]
+        sqlLan["school_line2017.batch"] = ["批次"]
+        sqlLan["school_line2017.average"] = ["平均分"]
+        sqlLan["school_line2017.lowest"] = ["最低分"]
+        sqlLan["school_line2017.province_line"] = ["省分数线"]
+        sqlLan["school_line2018.s_id"] = ["学校号"]
+        sqlLan["school_line2018.p_id"] = ["省号"]
+        sqlLan["school_line2018.type"] = [";类别"]
+        sqlLan["school_line2018.batch"] = ["批次"]
+        sqlLan["school_line2018.average"] = ["平均分"]
+        sqlLan["school_line2018.lowest"] = ["最低分"]
+        sqlLan["school_line2018.province_line"] = ["省分数线"]
+        sqlLan["major_line2016.s_id"] = ["学校号"]
+        sqlLan["major_line2016.m_id"] = ["专业号"]
+        sqlLan["major_line2016.p_id"] = ["省号"]
+        sqlLan["major_line2016.type"] = ["类别"]
+        sqlLan["major_line2016.batch"] = ["批次"]
+        sqlLan["major_line2016.average"] = ["平均分"]
+        sqlLan["major_line2016.lowest"] = ["最低分"]
+        sqlLan["major_line2017.s_id"] = ["学校号"]
+        sqlLan["major_line2017.m_id"] = ["专业号"]
+        sqlLan["major_line2017.p_id"] = ["省号"]
+        sqlLan["major_line2017.type"] = ["类别"]
+        sqlLan["major_line2017.batch"] = ["批次"]
+        sqlLan["major_line2017.average"] = ["平均分"]
+        sqlLan["major_line2017.lowest"] = ["最低分"]
+        sqlLan["major_line2018.s_id"] = ["学校号"]
+        sqlLan["major_line2018.m_id"] = ["专业号"]
+        sqlLan["major_line2018.p_id"] = ["省号"]
+        sqlLan["major_line2018.type"] = ["类别"]
+        sqlLan["major_line2018.batch"] = ["批次"]
+        sqlLan["major_line2018.average"] = ["平均分"]
+        sqlLan["major_line2018.lowest"] = ["最低分"]
+        self.model3 = QStandardItemModel()
+        self.model4 = QStandardItemModel()
+
+        for i in range(len(sqlTab[str(sqlkey[4])])):
+            lan = natureLanguage
+            sqlen = sqlLanguage
+            # a为根据sql语句中的列名,找到他的中文名
+            a = sqlLan[str(sqlkey[2])][0]
+            lan = lan.replace(str(a), sqlLan[str(sqlTab[str(sqlkey[4])][i])][0])
+            sqlen = sqlen.replace(str(sqlkey[2]), sqlTab[str(sqlkey[4])][i])
+            self.model3.setItem(i, 0, QStandardItem(str(lan)))
+            self.model4.setItem(i, 0, QStandardItem(str(sqlen)))
+            print(lan)
+            print(sqlen)
+        self.SonQ_Tab.setModel(self.model3)
+        self.SonSQL_Tab.setModel(self.model4)
+    # **************************************************************
+    def sub(self,str, p, c):  # 替换str中某一位置的字符
+        new = []
+        for s in str:
+            new.append(s)
+        new[p] = c
+        str = ''.join(new)
+        return str
+        # print(str)
+
+    def deletedouhao(self,str):  # 删除逗号前后的空格
+        start1 = 0
+        position = str.find(",", start1)
+        a = []
+        while position > -1:  # jsfs, d
+            # print(position)  #jsfs,d
+            if str[position - 1: position] == " ":
+                str = self.sub(str, position - 1, '')
+                position = position - 1
+                if str[position + 1: position + 2] == " ":
+                    str = self.sub(str, position + 1, '')
+                    start1 = position + 1
+                else:
+                    start1 = position + 1
+            else:
+                if str[position + 1: position + 2] == " ":
+                    str = self.sub(str, position + 1, '')
+                    start1 = position + 1
+                else:
+                    start1 = position + 1
+            position = str.find(",", start1)
+        return str
+        # print(str)
+
+    def deletedenghao(self,str):  # 删除等号前后的空格
+        start1 = 0
+        position = str.find("=", start1)
+        a = []
+        while position > -1:  # jsfs, d
+            # print(position)  #jsfs,d
+            if str[position - 1: position] == " ":
+                str = self.sub(str, position - 1, '')
+                position = position - 1
+                if str[position + 1: position + 2] == " ":
+                    str = self.sub(str, position + 1, '')
+                    start1 = position + 1
+                else:
+                    start1 = position + 1
+            else:
+                if str[position + 1: position + 2] == " ":
+                    str = self.sub(str, position + 1, '')
+                    start1 = position + 1
+                else:
+                    start1 = position + 1
+            position = str.find("=", start1)
+        return str
+        # print(str)
+
+    def InputStandard(self,str):
+        str = str.replace('>=', '@')
+        str = str.replace('<=', '#')
+        str = self.deletedouhao(str)
+        str = self.deletedouhao(str)
+        str = self.deletedenghao(str)
+        str = self.deletedenghao(str)
+        start2 = 0
+        position = str.find(",", start2)
+        a = []
+        while position > -1:
+            # print(position)
+            a.append(position)
+            start2 = position + 1
+            position = str.find(",", start2)
+
+        start2 = 0
+        position = str.find("=", start2)
+        b = []
+        while position > -1:
+            # print(position)
+            b.append(position)
+            start2 = position + 1
+            position = str.find("=", start2)
+        # a = []
+        # b = []
+        # a = findComma(",aj=k,a=kk=jk,")
+        # b = findEqulas_sign(",aj=k,a=kk=jk,")
+        a.extend(b)
+        a.sort()  # 数组a的值是“，”与“=”在字符串中的位置
+        # print(a)
+        # n = len(a)
+        str1 = list(str)
+
+        for i in range(len(a)):
+            str1.insert(a[i] + 2 * i, " ")
+            str1.insert(a[i] + 2 * (i + 1), " ")
+        str = ''.join(str1)
+        # print(str.find(",", 0, end))
+        # str1 = list(str)
+        # str1.insert(str.find(",", 0, 10), " ")
+        # str1.insert(str.find(",", 0, 10)+2, " ")
+        # str = ''.join(str1)\
+        str = str.replace('@','>=')
+        str = str.replace('#','<=')
+        return str
+
+    # ************************************************************************************
     '''
     查询按钮响应事件
     Attributes:
@@ -386,10 +464,20 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
             print(QMessageBox.information(self, "提醒", "未输入要查询的SQL语句", QMessageBox.Yes, QMessageBox.Yes))
             return
         self.solvewkeys()
-        self.solvesqlkey()  # 测试用
-        self.search_sql()  # 执行查询并显示到表格
-
-        self.test1(self.wquery,self.sqlquery)
+        # self.search_sql()  # 执行查询并显示到表格
+        '''
+        test1用于写select from where类型的
+        test2用于写select from 类型的
+        test3用于写带有group by类型的
+        '''
+        self.sqlquery = self.InputStandard(self.sqlquery)
+        print(self.sqlquery)
+        if 'where' not in self.sqlquery:
+            self.test2(self.wquery, self.sqlquery)
+        elif 'group' in self.sqlquery:
+            self.test1(self.wquery, self.sqlquery)
+        else:
+            self.test1(self.wquery, self.sqlquery)
 
 
     '''
